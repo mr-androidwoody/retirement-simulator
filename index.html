@@ -19,6 +19,9 @@
         <main class="layout">
             <section class="card controls">
                 <h2>Inputs</h2>
+                <p class="helper-note">
+                    Typical Guyton-Klinger defaults: 20% upper guardrail, 20% lower guardrail, 10% spending adjustment.
+                </p>
 
                 <div class="form-grid">
                     <div class="field field-range">
@@ -50,22 +53,54 @@
                     </div>
 
                     <div class="field">
-                        <label for="upperGuard">Upper Guardrail (%)</label>
+                        <label for="upperGuard" class="label-with-help">
+                            <span>Upper Guardrail (%)</span>
+                            <span
+                                class="help"
+                                tabindex="0"
+                                title="If your withdrawal rate rises this much above the starting rate, spending is reduced. Example: a 4% starting withdrawal with a 20% upper guardrail triggers a cut at 4.8%."
+                                aria-label="If your withdrawal rate rises this much above the starting rate, spending is reduced. Example: a 4 percent starting withdrawal with a 20 percent upper guardrail triggers a cut at 4.8 percent."
+                            >ⓘ</span>
+                        </label>
                         <input type="number" id="upperGuard" value="20">
                     </div>
 
                     <div class="field">
-                        <label for="lowerGuard">Lower Guardrail (%)</label>
+                        <label for="lowerGuard" class="label-with-help">
+                            <span>Lower Guardrail (%)</span>
+                            <span
+                                class="help"
+                                tabindex="0"
+                                title="If your withdrawal rate falls this much below the starting rate, spending increases. Example: a 4% starting withdrawal with a 20% lower guardrail triggers an increase at 3.2%."
+                                aria-label="If your withdrawal rate falls this much below the starting rate, spending increases. Example: a 4 percent starting withdrawal with a 20 percent lower guardrail triggers an increase at 3.2 percent."
+                            >ⓘ</span>
+                        </label>
                         <input type="number" id="lowerGuard" value="20">
                     </div>
 
                     <div class="field">
-                        <label for="downAdjust">Downward Adjustment (%)</label>
+                        <label for="downAdjust" class="label-with-help">
+                            <span>Downward Adjustment (%)</span>
+                            <span
+                                class="help"
+                                tabindex="0"
+                                title="The percentage spending cut applied when the upper guardrail is breached. Example: a 10% cut reduces £40,000 spending to £36,000."
+                                aria-label="The percentage spending cut applied when the upper guardrail is breached. Example: a 10 percent cut reduces 40 thousand pounds spending to 36 thousand pounds."
+                            >ⓘ</span>
+                        </label>
                         <input type="number" id="downAdjust" value="10">
                     </div>
 
                     <div class="field">
-                        <label for="upAdjust">Upward Adjustment (%)</label>
+                        <label for="upAdjust" class="label-with-help">
+                            <span>Upward Adjustment (%)</span>
+                            <span
+                                class="help"
+                                tabindex="0"
+                                title="The percentage spending increase applied when the lower guardrail is breached. Example: a 10% increase raises £40,000 spending to £44,000."
+                                aria-label="The percentage spending increase applied when the lower guardrail is breached. Example: a 10 percent increase raises 40 thousand pounds spending to 44 thousand pounds."
+                            >ⓘ</span>
+                        </label>
                         <input type="number" id="upAdjust" value="10">
                     </div>
                 </div>
