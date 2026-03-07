@@ -40,6 +40,7 @@ body {
     grid-template-columns: 320px 1fr;
     grid-template-areas:
         "controls chart"
+        "controls spending"
         "controls summary";
     gap: 20px;
     align-items: start;
@@ -61,6 +62,11 @@ body {
 
 .chart-card {
     grid-area: chart;
+    padding-bottom: 12px;
+}
+
+.spending-card {
+    grid-area: spending;
     padding-bottom: 12px;
 }
 
@@ -179,6 +185,30 @@ body {
     font-size: 0.92rem;
 }
 
+.toggle-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.toggle-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+.toggle-option input {
+    margin: 0;
+}
+
 .model-note {
     margin-top: 14px;
     padding: 12px 14px;
@@ -248,11 +278,19 @@ body {
     width: 100%;
 }
 
-#chart {
+#chart,
+#spendingChart {
     width: 100%;
-    height: 320px;
     display: block;
     background: #fff;
+}
+
+#chart {
+    height: 320px;
+}
+
+#spendingChart {
+    height: 260px;
 }
 
 .chart-note {
@@ -295,6 +333,7 @@ body {
         grid-template-areas:
             "controls"
             "chart"
+            "spending"
             "summary";
     }
 
@@ -317,6 +356,10 @@ body {
 
     #chart {
         height: 280px;
+    }
+
+    #spendingChart {
+        height: 240px;
     }
 
     .chart-legend {
