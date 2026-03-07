@@ -1,53 +1,93 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Guyton-Klinger Guardrails Simulator</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retirement Simulator</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
+    <div class="page">
+        <header class="hero">
+            <div>
+                <h1>Retirement Simulator</h1>
+                <p class="subhead">Monte Carlo testing with Guyton-Klinger guardrails</p>
+            </div>
+            <button class="run-btn" onclick="runSimulation()">Run Simulation</button>
+        </header>
 
-<h2>Retirement Simulator</h2>
+        <main class="layout">
+            <section class="card controls">
+                <h2>Inputs</h2>
 
-<div class="panel">
+                <div class="form-grid">
+                    <div class="field field-range">
+                        <label for="years">Retirement Period</label>
+                        <div class="range-wrap">
+                            <input type="range" id="years" min="1" max="40" value="30" oninput="document.getElementById('yearsValue').textContent = this.value">
+                            <span class="range-value"><span id="yearsValue">30</span> yrs</span>
+                        </div>
+                    </div>
 
-<label>Retirement Period (years)</label>
-<input type="range" id="years" min="10" max="40" value="30">
+                    <div class="field">
+                        <label for="capital">Initial Capital (£)</label>
+                        <input type="number" id="capital" value="1000000">
+                    </div>
 
-<label>Stock Allocation (%)</label>
-<input type="number" id="stocks" value="100">
+                    <div class="field">
+                        <label for="stocks">Stock Allocation (%)</label>
+                        <input type="number" id="stocks" value="100">
+                    </div>
 
-<label>Bond Allocation (%)</label>
-<input type="number" id="bonds" value="0">
+                    <div class="field">
+                        <label for="bonds">Bond Allocation (%)</label>
+                        <input type="number" id="bonds" value="0">
+                    </div>
 
-<label>Initial Capital (£)</label>
-<input type="number" id="capital" value="1000000">
+                    <div class="field">
+                        <label for="withdrawalRate">Initial Withdrawal Rate (%)</label>
+                        <input type="number" id="withdrawalRate" value="4" step="0.1">
+                    </div>
 
-<label>Initial Withdrawal Rate (%)</label>
-<input type="number" id="withdrawalRate" value="4">
+                    <div class="field">
+                        <label for="upperGuard">Upper Guardrail (%)</label>
+                        <input type="number" id="upperGuard" value="20">
+                    </div>
 
-<label>Upper Guardrail (%)</label>
-<input type="number" id="upperGuard" value="20">
+                    <div class="field">
+                        <label for="lowerGuard">Lower Guardrail (%)</label>
+                        <input type="number" id="lowerGuard" value="20">
+                    </div>
 
-<label>Lower Guardrail (%)</label>
-<input type="number" id="lowerGuard" value="20">
+                    <div class="field">
+                        <label for="downAdjust">Downward Adjustment (%)</label>
+                        <input type="number" id="downAdjust" value="10">
+                    </div>
 
-<label>Downward Adjustment (%)</label>
-<input type="number" id="downAdjust" value="10">
+                    <div class="field">
+                        <label for="upAdjust">Upward Adjustment (%)</label>
+                        <input type="number" id="upAdjust" value="10">
+                    </div>
+                </div>
+            </section>
 
-<label>Upward Adjustment (%)</label>
-<input type="number" id="upAdjust" value="10">
+            <section class="card chart-card">
+                <div class="section-head">
+                    <h2>Projection</h2>
+                    <p>10th, 50th and 90th percentile portfolio paths</p>
+                </div>
+                <canvas id="chart" width="1000" height="500"></canvas>
+            </section>
 
-<button onclick="runSimulation()">Run Simulation</button>
+            <section class="card summary-card">
+                <h2>Monte Carlo Summary</h2>
+                <div id="summary"></div>
+            </section>
+        </main>
+    </div>
 
-</div>
-
-<canvas id="chart" width="800" height="400"></canvas>
-
-<script src="montecarlo.js"></script>
-<script src="guardrails.js"></script>
-<script src="app.js"></script>
-
+    <script src="montecarlo.js"></script>
+    <script src="guardrails.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
