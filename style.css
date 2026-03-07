@@ -155,6 +155,12 @@ body {
     border-color: #2563eb;
 }
 
+.readonly-field {
+    background: #f9fafb !important;
+    color: #111827;
+    font-weight: 700;
+}
+
 .range-wrap {
     display: flex;
     align-items: center;
@@ -171,6 +177,17 @@ body {
     font-weight: 700;
     color: #2563eb;
     font-size: 0.92rem;
+}
+
+.model-note {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    color: #4b5563;
+    font-size: 0.86rem;
+    line-height: 1.45;
 }
 
 .run-btn {
