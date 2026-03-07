@@ -7,6 +7,12 @@ function runSimulation() {
     const stocks = Number(document.getElementById("stocks").value) / 100;
     const bonds = Number(document.getElementById("bonds").value) / 100;
     const chartMode = getChartMode();
+    const skipInflationAfterBadYear = document.getElementById("skipInflationAfterBadYear").checked;
+
+    const person1Age = Number(document.getElementById("person1Age").value);
+    const person2Age = Number(document.getElementById("person2Age").value);
+    const statePensionAge = Number(document.getElementById("statePensionAge").value);
+    const statePensionAmount = parseCurrencyInput(document.getElementById("statePensionAmount").value);
 
     if (Math.abs((stocks + bonds) - 1) > 0.0001) {
         alert("Stock and bond allocation must add up to 100%.");
@@ -20,6 +26,11 @@ function runSimulation() {
 
     if (inflationRate < 0) {
         alert("Inflation assumption cannot be negative.");
+        return;
+    }
+
+    if (statePensionAge <= 0 || statePensionAmount < 0) {
+        alert("Please enter sensible state pension assumptions.");
         return;
     }
 
@@ -38,15 +49,20 @@ function runSimulation() {
     let successCount = 0;
 
     for (let i = 0; i < simulationCount; i++) {
-        const result = runSingleSimulation(
+        const result = runSingleSimulation({
             years,
             capital,
             initialWithdrawalRate,
             inflationRate,
             stocks,
             bonds,
-            params
-        );
+            params,
+            skipInflationAfterBadYear,
+            person1Age,
+            person2Age,
+            statePensionAge,
+            statePensionAmount
+        });
 
         portfolioPaths.push(chartMode === "real" ? result.realPortfolioPath : result.nominalPortfolioPath);
         spendingPaths.push(chartMode === "real" ? result.realSpendingPath : result.nominalSpendingPath);
@@ -64,6 +80,7 @@ function runSimulation() {
 
     drawRangeChart("chart", portfolioChartData, "currency");
     drawRangeChart("spendingChart", spendingChartData, "currency");
+
     showSummary(
         portfolioSummary,
         capital,
@@ -71,22 +88,56 @@ function runSimulation() {
         initialWithdrawalRate,
         inflationRate,
         chartMode,
-        simulationCount
+        simulationCount,
+        person1Age,
+        person2Age,
+        statePensionAge,
+        statePensionAmount,
+        skipInflationAfterBadYear
     );
 }
 
-function runSingleSimulation(years, capital, initialWithdrawalRate, inflationRate, stocks, bonds, params) {
+function runSingleSimulation(config) {
+    const {
+        years,
+        capital,
+        initialWithdrawalRate,
+        inflationRate,
+        stocks,
+        bonds,
+        params,
+        skipInflationAfterBadYear,
+        person1Age,
+        person2Age,
+        statePensionAge,
+        statePensionAmount
+    } = config;
+
     let portfolio = capital;
-    let withdrawal = capital * initialWithdrawalRate;
-    let nominalTotalWithdrawn = 0;
-    let realTotalWithdrawn = 0;
+    let desiredSpending = capital * initialWithdrawalRate;
     let inflationIndex = 1;
+    let previousReturn = null;
     let succeeded = true;
+
+    let nominalPortfolioWithdrawalTotal = 0;
+    let realPortfolioWithdrawalTotal = 0;
 
     const nominalPortfolioPath = [];
     const realPortfolioPath = [];
     const nominalSpendingPath = [];
     const realSpendingPath = [];
+
+    const initialPensionIncome = getNominalPensionIncomeForYear(
+        0,
+        inflationIndex,
+        person1Age,
+        person2Age,
+        statePensionAge,
+        statePensionAmount
+    );
+
+    const startingPortfolioWithdrawal = Math.max(desiredSpending - initialPensionIncome, 0);
+    const startingPortfolioWithdrawalRate = capital > 0 ? startingPortfolioWithdrawal / capital : 0;
 
     for (let year = 0; year < years; year++) {
         const annualReturn = portfolioReturn(stocks, bonds);
@@ -94,23 +145,53 @@ function runSingleSimulation(years, capital, initialWithdrawalRate, inflationRat
 
         if (year > 0) {
             inflationIndex *= (1 + inflationRate);
-            withdrawal *= (1 + inflationRate);
+
+            const shouldSkipInflation =
+                skipInflationAfterBadYear && previousReturn !== null && previousReturn < 0;
+
+            if (!shouldSkipInflation) {
+                desiredSpending *= (1 + inflationRate);
+            }
         }
 
-        withdrawal = applyGuardrails(withdrawal, portfolio, initialWithdrawalRate, params);
+        const nominalPensionIncome = getNominalPensionIncomeForYear(
+            year,
+            inflationIndex,
+            person1Age,
+            person2Age,
+            statePensionAge,
+            statePensionAmount
+        );
 
-        if (withdrawal > portfolio) {
-            withdrawal = portfolio;
+        let requiredPortfolioWithdrawal = Math.max(desiredSpending - nominalPensionIncome, 0);
+
+        if (startingPortfolioWithdrawalRate > 0 && requiredPortfolioWithdrawal > 0) {
+            requiredPortfolioWithdrawal = applyGuardrails(
+                requiredPortfolioWithdrawal,
+                portfolio,
+                startingPortfolioWithdrawalRate,
+                params
+            );
         }
 
-        portfolio -= withdrawal;
-        nominalTotalWithdrawn += withdrawal;
-        realTotalWithdrawn += withdrawal / inflationIndex;
+        if (requiredPortfolioWithdrawal > portfolio) {
+            requiredPortfolioWithdrawal = portfolio;
+        }
+
+        portfolio -= requiredPortfolioWithdrawal;
+
+        const actualTotalSpending = requiredPortfolioWithdrawal + nominalPensionIncome;
+
+        nominalPortfolioWithdrawalTotal += requiredPortfolioWithdrawal;
+        realPortfolioWithdrawalTotal += requiredPortfolioWithdrawal / inflationIndex;
 
         nominalPortfolioPath.push(Math.max(portfolio, 0));
         realPortfolioPath.push(Math.max(portfolio, 0) / inflationIndex);
-        nominalSpendingPath.push(withdrawal);
-        realSpendingPath.push(withdrawal / inflationIndex);
+
+        nominalSpendingPath.push(actualTotalSpending);
+        realSpendingPath.push(actualTotalSpending / inflationIndex);
+
+        previousReturn = annualReturn;
 
         if (portfolio <= 0) {
             succeeded = false;
@@ -119,20 +200,22 @@ function runSingleSimulation(years, capital, initialWithdrawalRate, inflationRat
                 inflationIndex *= (1 + inflationRate);
                 nominalPortfolioPath.push(0);
                 realPortfolioPath.push(0);
-                nominalSpendingPath.push(0);
-                realSpendingPath.push(0);
+
+                const pensionOnlySpending = getNominalPensionIncomeForYear(
+                    remaining,
+                    inflationIndex,
+                    person1Age,
+                    person2Age,
+                    statePensionAge,
+                    statePensionAmount
+                );
+
+                nominalSpendingPath.push(pensionOnlySpending);
+                realSpendingPath.push(pensionOnlySpending / inflationIndex);
             }
 
             break;
         }
-    }
-
-    while (nominalPortfolioPath.length < years) {
-        inflationIndex *= (1 + inflationRate);
-        nominalPortfolioPath.push(Math.max(portfolio, 0));
-        realPortfolioPath.push(Math.max(portfolio, 0) / inflationIndex);
-        nominalSpendingPath.push(0);
-        realSpendingPath.push(0);
     }
 
     return {
@@ -140,12 +223,33 @@ function runSingleSimulation(years, capital, initialWithdrawalRate, inflationRat
         realPortfolioPath,
         nominalSpendingPath,
         realSpendingPath,
-        nominalEndingPortfolio: Math.max(portfolio, 0),
-        realEndingPortfolio: Math.max(portfolio, 0) / inflationIndex,
-        nominalTotalWithdrawn,
-        realTotalWithdrawn,
+        nominalEndingPortfolio: nominalPortfolioPath[nominalPortfolioPath.length - 1] || 0,
+        realEndingPortfolio: realPortfolioPath[realPortfolioPath.length - 1] || 0,
+        nominalTotalWithdrawn: nominalPortfolioWithdrawalTotal,
+        realTotalWithdrawn: realPortfolioWithdrawalTotal,
         succeeded
     };
+}
+
+function getNominalPensionIncomeForYear(
+    yearIndex,
+    inflationIndex,
+    person1Age,
+    person2Age,
+    statePensionAge,
+    statePensionAmount
+) {
+    let total = 0;
+
+    if ((person1Age + yearIndex) >= statePensionAge) {
+        total += statePensionAmount * inflationIndex;
+    }
+
+    if ((person2Age + yearIndex) >= statePensionAge) {
+        total += statePensionAmount * inflationIndex;
+    }
+
+    return total;
 }
 
 function buildSummary(endingValues, totalWithdrawals, successCount, simulationCount) {
@@ -330,7 +434,20 @@ function drawLine(ctx, data, width, height, padding, maxY, colour, lineWidth) {
     ctx.stroke();
 }
 
-function showSummary(summary, startingCapital, years, initialWithdrawalRate, inflationRate, chartMode, simulationCount) {
+function showSummary(
+    summary,
+    startingCapital,
+    years,
+    initialWithdrawalRate,
+    inflationRate,
+    chartMode,
+    simulationCount,
+    person1Age,
+    person2Age,
+    statePensionAge,
+    statePensionAmount,
+    skipInflationAfterBadYear
+) {
     const summaryDiv = document.getElementById("summary");
 
     summaryDiv.innerHTML = `
@@ -360,8 +477,28 @@ function showSummary(summary, startingCapital, years, initialWithdrawalRate, inf
         </div>
 
         <div class="summary-item">
+            <span class="summary-label">Inflation skip rule</span>
+            <span class="summary-value">${skipInflationAfterBadYear ? "On" : "Off"}</span>
+        </div>
+
+        <div class="summary-item">
             <span class="summary-label">Chart mode</span>
             <span class="summary-value">${capitalise(chartMode)}</span>
+        </div>
+
+        <div class="summary-item">
+            <span class="summary-label">State pension assumption</span>
+            <span class="summary-value">£${formatNumber(Math.round(statePensionAmount))} each @ age ${statePensionAge}</span>
+        </div>
+
+        <div class="summary-item">
+            <span class="summary-label">Person 1 pension start</span>
+            <span class="summary-value">${getPensionStartLabel(person1Age, statePensionAge)}</span>
+        </div>
+
+        <div class="summary-item">
+            <span class="summary-label">Person 2 pension start</span>
+            <span class="summary-value">${getPensionStartLabel(person2Age, statePensionAge)}</span>
         </div>
 
         <div class="summary-item">
@@ -385,7 +522,7 @@ function showSummary(summary, startingCapital, years, initialWithdrawalRate, inf
         </div>
 
         <div class="summary-item">
-            <span class="summary-label">Median total withdrawn</span>
+            <span class="summary-label">Median portfolio withdrawals</span>
             <span class="summary-value">£${formatNumber(Math.round(summary.medianWithdrawn))}</span>
         </div>
 
@@ -411,7 +548,7 @@ function parseCurrencyInput(value) {
     return Number(cleaned);
 }
 
-function formatCapitalInput(value) {
+function formatCurrencyInput(value) {
     const digitsOnly = String(value).replace(/[^\d]/g, "");
 
     if (!digitsOnly) {
@@ -440,6 +577,31 @@ function updateInitialWithdrawalAmount() {
 
     const annualAmount = capital * withdrawalRate;
     output.value = formatNumber(Math.round(annualAmount));
+}
+
+function updateStatePensionSummary() {
+    const person1Age = Number(document.getElementById("person1Age").value);
+    const person2Age = Number(document.getElementById("person2Age").value);
+    const statePensionAge = Number(document.getElementById("statePensionAge").value);
+    const summary = document.getElementById("statePensionSummary");
+
+    if (!summary) {
+        return;
+    }
+
+    const label1 = getPensionStartLabel(person1Age, statePensionAge);
+    const label2 = getPensionStartLabel(person2Age, statePensionAge);
+
+    summary.value = `P1: ${label1} | P2: ${label2}`;
+}
+
+function getPensionStartLabel(currentAge, pensionAge) {
+    if (currentAge >= pensionAge) {
+        return "Already in payment";
+    }
+
+    const yearsUntil = pensionAge - currentAge;
+    return `Year ${yearsUntil + 1}`;
 }
 
 function formatAxisValue(value, valueType) {
@@ -479,9 +641,14 @@ window.addEventListener("DOMContentLoaded", () => {
     const yearsInput = document.getElementById("years");
     const yearsValue = document.getElementById("yearsValue");
     const capitalInput = document.getElementById("capital");
+    const statePensionAmountInput = document.getElementById("statePensionAmount");
     const withdrawalRateInput = document.getElementById("withdrawalRate");
     const inflationRateInput = document.getElementById("inflationRate");
     const chartModeInputs = document.querySelectorAll('input[name="chartMode"]');
+    const skipInflationCheckbox = document.getElementById("skipInflationAfterBadYear");
+    const person1AgeInput = document.getElementById("person1Age");
+    const person2AgeInput = document.getElementById("person2Age");
+    const statePensionAgeInput = document.getElementById("statePensionAge");
 
     if (yearsInput && yearsValue) {
         yearsValue.textContent = yearsInput.value;
@@ -491,16 +658,28 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 
     if (capitalInput) {
-        capitalInput.value = formatCapitalInput(capitalInput.value);
+        capitalInput.value = formatCurrencyInput(capitalInput.value);
 
         capitalInput.addEventListener("input", () => {
-            capitalInput.value = formatCapitalInput(capitalInput.value);
+            capitalInput.value = formatCurrencyInput(capitalInput.value);
             updateInitialWithdrawalAmount();
         });
 
         capitalInput.addEventListener("blur", () => {
-            capitalInput.value = formatCapitalInput(capitalInput.value);
+            capitalInput.value = formatCurrencyInput(capitalInput.value);
             updateInitialWithdrawalAmount();
+        });
+    }
+
+    if (statePensionAmountInput) {
+        statePensionAmountInput.value = formatCurrencyInput(statePensionAmountInput.value);
+
+        statePensionAmountInput.addEventListener("input", () => {
+            statePensionAmountInput.value = formatCurrencyInput(statePensionAmountInput.value);
+        });
+
+        statePensionAmountInput.addEventListener("blur", () => {
+            statePensionAmountInput.value = formatCurrencyInput(statePensionAmountInput.value);
         });
     }
 
@@ -516,12 +695,38 @@ window.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    if (skipInflationCheckbox) {
+        skipInflationCheckbox.addEventListener("change", () => {
+            runSimulation();
+        });
+    }
+
     chartModeInputs.forEach(input => {
         input.addEventListener("change", () => {
             runSimulation();
         });
     });
 
+    [person1AgeInput, person2AgeInput, statePensionAgeInput].forEach(input => {
+        if (input) {
+            input.addEventListener("input", () => {
+                updateStatePensionSummary();
+                runSimulation();
+            });
+        }
+    });
+
+    if (statePensionAmountInput) {
+        statePensionAmountInput.addEventListener("input", () => {
+            runSimulation();
+        });
+
+        statePensionAmountInput.addEventListener("blur", () => {
+            runSimulation();
+        });
+    }
+
     updateInitialWithdrawalAmount();
+    updateStatePensionSummary();
     runSimulation();
 });
