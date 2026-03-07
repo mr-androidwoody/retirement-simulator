@@ -90,10 +90,8 @@ function runSingleSimulation(years, capital, initialWithdrawalRate, stocks, bond
         }
     }
 
-    if (portfolioPath.length < years) {
-        while (portfolioPath.length < years) {
-            portfolioPath.push(Math.max(portfolio, 0));
-        }
+    while (portfolioPath.length < years) {
+        portfolioPath.push(Math.max(portfolio, 0));
     }
 
     return {
@@ -381,6 +379,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     if (yearsInput && yearsValue) {
         yearsValue.textContent = yearsInput.value;
+
         yearsInput.addEventListener("input", () => {
             yearsValue.textContent = yearsInput.value;
         });
