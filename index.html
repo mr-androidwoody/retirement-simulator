@@ -70,6 +70,25 @@
                     </div>
 
                     <div class="field">
+                        <label for="inflationRate">Inflation Assumption (%)</label>
+                        <input type="number" id="inflationRate" value="2.5" step="0.1">
+                    </div>
+
+                    <div class="field">
+                        <label>Chart Mode</label>
+                        <div class="toggle-row">
+                            <label class="toggle-option">
+                                <input type="radio" name="chartMode" value="nominal">
+                                <span>Nominal</span>
+                            </label>
+                            <label class="toggle-option">
+                                <input type="radio" name="chartMode" value="real" checked>
+                                <span>Real</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="field">
                         <label for="upperGuard" class="label-with-help">
                             <span>Upper Guardrail (%)</span>
                             <span
@@ -123,13 +142,13 @@
                 </div>
 
                 <div class="model-note">
-                    <strong>Inflation treatment:</strong> this version does not automatically increase withdrawals each year with inflation. Spending only changes when the guardrail rules trigger.
+                    <strong>Inflation treatment:</strong> this version increases annual spending by the inflation assumption each year, then applies guardrail cuts or rises. It does not yet include the more advanced Guyton-Klinger rule that may skip inflation increases after bad market years.
                 </div>
             </section>
 
             <section class="card chart-card">
                 <div class="section-head">
-                    <h2>Projection</h2>
+                    <h2>Portfolio Projection</h2>
                     <p>10th, 50th and 90th percentile portfolio paths</p>
                 </div>
 
@@ -154,6 +173,36 @@
 
                 <p class="chart-note">
                     Shaded area shows the range between the 10th and 90th percentile outcomes.
+                </p>
+            </section>
+
+            <section class="card spending-card">
+                <div class="section-head">
+                    <h2>Annual Spending Path</h2>
+                    <p>How withdrawals evolve over time under the guardrail rules</p>
+                </div>
+
+                <div class="chart-legend" aria-label="Spending chart legend">
+                    <div class="legend-item">
+                        <span class="legend-line legend-line-90"></span>
+                        <span>90th percentile</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-line legend-line-50"></span>
+                        <span>Median</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-line legend-line-10"></span>
+                        <span>10th percentile</span>
+                    </div>
+                </div>
+
+                <div class="chart-wrap">
+                    <canvas id="spendingChart" width="1000" height="320"></canvas>
+                </div>
+
+                <p class="chart-note">
+                    Spending is shown in the selected chart mode: nominal or inflation-adjusted real pounds.
                 </p>
             </section>
 
