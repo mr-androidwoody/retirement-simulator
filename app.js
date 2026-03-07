@@ -572,6 +572,12 @@ function showSummary(
     statePensionAmount,
     skipInflationAfterBadYear
 ) {
+    const yearsUntilP1 = Math.max(statePensionAge - person1Age, 0);
+    const yearsUntilP2 = Math.max(statePensionAge - person2Age, 0);
+
+    const p1ProjectedStart = statePensionAmount * Math.pow(1 + inflationRate, yearsUntilP1);
+    const p2ProjectedStart = statePensionAmount * Math.pow(1 + inflationRate, yearsUntilP2);
+
     const summaryDiv = document.getElementById("summary");
 
     summaryDiv.innerHTML = `
@@ -611,8 +617,8 @@ function showSummary(
         </div>
 
         <div class="summary-item">
-            <span class="summary-label">State pension assumption</span>
-            <span class="summary-value">£${formatNumber(Math.round(statePensionAmount))} each @ age ${statePensionAge}</span>
+            <span class="summary-label">State pension assumption today</span>
+            <span class="summary-value">£${formatNumber(Math.round(statePensionAmount))} each</span>
         </div>
 
         <div class="summary-item">
@@ -621,8 +627,18 @@ function showSummary(
         </div>
 
         <div class="summary-item">
+            <span class="summary-label">Person 1 projected pension at start</span>
+            <span class="summary-value">£${formatNumber(Math.round(p1ProjectedStart))}</span>
+        </div>
+
+        <div class="summary-item">
             <span class="summary-label">Person 2 pension start</span>
             <span class="summary-value">${getPensionStartLabel(person2Age, statePensionAge)}</span>
+        </div>
+
+        <div class="summary-item">
+            <span class="summary-label">Person 2 projected pension at start</span>
+            <span class="summary-value">£${formatNumber(Math.round(p2ProjectedStart))}</span>
         </div>
 
         <div class="summary-item">
