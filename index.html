@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Guyton-Klinger Guardrails Simulator</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<h2>Retirement Simulator</h2>
+
+<div class="panel">
+
+<label>Retirement Period (years)</label>
+<input type="range" id="years" min="10" max="40" value="30">
+
+<label>Stock Allocation (%)</label>
+<input type="number" id="stocks" value="100">
+
+<label>Bond Allocation (%)</label>
+<input type="number" id="bonds" value="0">
+
+<label>Initial Capital (£)</label>
+<input type="number" id="capital" value="1000000">
+
+<label>Initial Withdrawal Rate (%)</label>
+<input type="number" id="withdrawalRate" value="4">
+
+<label>Upper Guardrail (%)</label>
+<input type="number" id="upperGuard" value="20">
+
+<label>Lower Guardrail (%)</label>
+<input type="number" id="lowerGuard" value="20">
+
+<label>Downward Adjustment (%)</label>
+<input type="number" id="downAdjust" value="10">
+
+<label>Upward Adjustment (%)</label>
+<input type="number" id="upAdjust" value="10">
+
+<button onclick="runSimulation()">Run Simulation</button>
+
+</div>
+
+<canvas id="chart" width="800" height="400"></canvas>
+
+<script src="montecarlo.js"></script>
+<script src="guardrails.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
