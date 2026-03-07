@@ -37,7 +37,7 @@ body {
 
 .layout {
     display: grid;
-    grid-template-columns: 320px 1fr;
+    grid-template-columns: 340px 1fr;
     grid-template-areas:
         "controls chart"
         "controls spending"
@@ -116,6 +116,31 @@ body {
     color: #374151;
 }
 
+.field-group {
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: #fafafa;
+}
+
+.field-group-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #374151;
+}
+
+.two-up {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.two-up > div {
+    display: grid;
+    gap: 6px;
+}
+
 .label-with-help {
     display: flex;
     align-items: center;
@@ -191,7 +216,8 @@ body {
     flex-wrap: wrap;
 }
 
-.toggle-option {
+.toggle-option,
+.checkbox-option {
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -205,7 +231,8 @@ body {
     color: #374151;
 }
 
-.toggle-option input {
+.toggle-option input,
+.checkbox-option input {
     margin: 0;
 }
 
@@ -364,5 +391,9 @@ body {
 
     .chart-legend {
         gap: 14px;
+    }
+
+    .two-up {
+        grid-template-columns: 1fr;
     }
 }
