@@ -59,6 +59,17 @@
                     </div>
 
                     <div class="field">
+                        <label for="initialWithdrawalAmount">Initial Annual Withdrawal (£)</label>
+                        <input
+                            type="text"
+                            id="initialWithdrawalAmount"
+                            value="40,000"
+                            readonly
+                            class="readonly-field"
+                        >
+                    </div>
+
+                    <div class="field">
                         <label for="upperGuard" class="label-with-help">
                             <span>Upper Guardrail (%)</span>
                             <span
@@ -109,6 +120,10 @@
                         </label>
                         <input type="number" id="upAdjust" value="10">
                     </div>
+                </div>
+
+                <div class="model-note">
+                    <strong>Inflation treatment:</strong> this version does not automatically increase withdrawals each year with inflation. Spending only changes when the guardrail rules trigger.
                 </div>
             </section>
 
