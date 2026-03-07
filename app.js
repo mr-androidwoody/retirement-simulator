@@ -1,6 +1,6 @@
 function runSimulation() {
     const years = Number(document.getElementById("years").value);
-    const capital = Number(document.getElementById("capital").value);
+    const capital = parseCurrencyInput(document.getElementById("capital").value);
     const initialWithdrawalRate = Number(document.getElementById("withdrawalRate").value) / 100;
 
     const stocks = Number(document.getElementById("stocks").value) / 100;
@@ -156,7 +156,12 @@ function drawMonteCarloChart(chartData) {
 
     const width = canvas.width;
     const height = canvas.height;
-    const padding = 60;
+    const padding = {
+        top: 16,
+        right: 18,
+        bottom: 42,
+        left: 56
+    };
 
     ctx.clearRect(0, 0, width, height);
 
@@ -168,69 +173,75 @@ function drawMonteCarloChart(chartData) {
     drawLine(ctx, chartData.p90, width, height, padding, maxY, "#9ca3af", 2);
     drawLine(ctx, chartData.p50, width, height, padding, maxY, "#2563eb", 3);
     drawLine(ctx, chartData.p10, width, height, padding, maxY, "#dc2626", 2);
-    drawLegend(ctx, width);
 }
 
 function drawAxes(ctx, width, height, padding, maxY, years) {
+    const plotLeft = padding.left;
+    const plotRight = width - padding.right;
+    const plotTop = padding.top;
+    const plotBottom = height - padding.bottom;
+
     ctx.strokeStyle = "#d1d5db";
     ctx.lineWidth = 1;
 
     const yTicks = 5;
     for (let i = 0; i <= yTicks; i++) {
         const value = (maxY / yTicks) * i;
-        const y = height - padding - (value / maxY) * (height - 2 * padding);
+        const y = plotBottom - (value / maxY) * (plotBottom - plotTop);
 
         ctx.beginPath();
-        ctx.moveTo(padding, y);
-        ctx.lineTo(width - padding, y);
+        ctx.moveTo(plotLeft, y);
+        ctx.lineTo(plotRight, y);
         ctx.stroke();
 
         ctx.fillStyle = "#6b7280";
         ctx.font = "12px Arial";
-        ctx.fillText("£" + formatCompactNumber(Math.round(value)), 10, y + 4);
+        ctx.textAlign = "left";
+        ctx.fillText("£" + formatCompactCurrency(Math.round(value)), 10, y + 4);
     }
 
-    ctx.strokeStyle = "#374151";
-    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = "#9ca3af";
+    ctx.lineWidth = 1.4;
 
     ctx.beginPath();
-    ctx.moveTo(padding, padding);
-    ctx.lineTo(padding, height - padding);
-    ctx.lineTo(width - padding, height - padding);
+    ctx.moveTo(plotLeft, plotTop);
+    ctx.lineTo(plotLeft, plotBottom);
+    ctx.lineTo(plotRight, plotBottom);
     ctx.stroke();
 
     const xTicks = Math.min(years, 6);
     for (let i = 0; i <= xTicks; i++) {
         const yearIndex = Math.round((i / xTicks) * (years - 1));
-        const x = padding + (yearIndex / Math.max(years - 1, 1)) * (width - 2 * padding);
+        const x = plotLeft + (yearIndex / Math.max(years - 1, 1)) * (plotRight - plotLeft);
 
         ctx.beginPath();
-        ctx.moveTo(x, height - padding);
-        ctx.lineTo(x, height - padding + 6);
+        ctx.moveTo(x, plotBottom);
+        ctx.lineTo(x, plotBottom + 6);
         ctx.stroke();
 
         ctx.fillStyle = "#6b7280";
         ctx.font = "12px Arial";
-        ctx.fillText(String(yearIndex + 1), x - 6, height - padding + 22);
+        ctx.textAlign = "center";
+        ctx.fillText(String(yearIndex + 1), x, plotBottom + 22);
     }
 
     ctx.fillStyle = "#4b5563";
     ctx.font = "13px Arial";
-    ctx.fillText("Year", width / 2 - 12, height - 15);
-
-    ctx.save();
-    ctx.translate(18, height / 2 + 20);
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText("Portfolio value", 0, 0);
-    ctx.restore();
+    ctx.textAlign = "center";
+    ctx.fillText("Year", width / 2, height - 8);
 }
 
 function drawBand(ctx, lowerData, upperData, width, height, padding, maxY) {
+    const plotLeft = padding.left;
+    const plotRight = width - padding.right;
+    const plotTop = padding.top;
+    const plotBottom = height - padding.bottom;
+
     ctx.beginPath();
 
     for (let i = 0; i < upperData.length; i++) {
-        const x = padding + (i / Math.max(upperData.length - 1, 1)) * (width - 2 * padding);
-        const y = height - padding - (upperData[i] / maxY) * (height - 2 * padding);
+        const x = plotLeft + (i / Math.max(upperData.length - 1, 1)) * (plotRight - plotLeft);
+        const y = plotBottom - (upperData[i] / maxY) * (plotBottom - plotTop);
 
         if (i === 0) {
             ctx.moveTo(x, y);
@@ -240,22 +251,27 @@ function drawBand(ctx, lowerData, upperData, width, height, padding, maxY) {
     }
 
     for (let i = lowerData.length - 1; i >= 0; i--) {
-        const x = padding + (i / Math.max(lowerData.length - 1, 1)) * (width - 2 * padding);
-        const y = height - padding - (lowerData[i] / maxY) * (height - 2 * padding);
+        const x = plotLeft + (i / Math.max(lowerData.length - 1, 1)) * (plotRight - plotLeft);
+        const y = plotBottom - (lowerData[i] / maxY) * (plotBottom - plotTop);
         ctx.lineTo(x, y);
     }
 
     ctx.closePath();
-    ctx.fillStyle = "rgba(37, 99, 235, 0.10)";
+    ctx.fillStyle = "rgba(37, 99, 235, 0.08)";
     ctx.fill();
 }
 
 function drawLine(ctx, data, width, height, padding, maxY, colour, lineWidth) {
+    const plotLeft = padding.left;
+    const plotRight = width - padding.right;
+    const plotTop = padding.top;
+    const plotBottom = height - padding.bottom;
+
     ctx.beginPath();
 
     for (let i = 0; i < data.length; i++) {
-        const x = padding + (i / Math.max(data.length - 1, 1)) * (width - 2 * padding);
-        const y = height - padding - (data[i] / maxY) * (height - 2 * padding);
+        const x = plotLeft + (i / Math.max(data.length - 1, 1)) * (plotRight - plotLeft);
+        const y = plotBottom - (data[i] / maxY) * (plotBottom - plotTop);
 
         if (i === 0) {
             ctx.moveTo(x, y);
@@ -267,29 +283,6 @@ function drawLine(ctx, data, width, height, padding, maxY, colour, lineWidth) {
     ctx.strokeStyle = colour;
     ctx.lineWidth = lineWidth;
     ctx.stroke();
-}
-
-function drawLegend(ctx, width) {
-    const startX = width - 190;
-    const startY = 30;
-    const gap = 24;
-
-    drawLegendItem(ctx, startX, startY, "#9ca3af", "90th percentile");
-    drawLegendItem(ctx, startX, startY + gap, "#2563eb", "Median");
-    drawLegendItem(ctx, startX, startY + gap * 2, "#dc2626", "10th percentile");
-}
-
-function drawLegendItem(ctx, x, y, colour, label) {
-    ctx.strokeStyle = colour;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + 22, y);
-    ctx.stroke();
-
-    ctx.fillStyle = "#374151";
-    ctx.font = "12px Arial";
-    ctx.fillText(label, x + 30, y + 4);
 }
 
 function showSummary(summary, startingCapital, years, initialWithdrawalRate, simulationCount) {
@@ -353,6 +346,21 @@ function showSummary(summary, startingCapital, years, initialWithdrawalRate, sim
     `;
 }
 
+function parseCurrencyInput(value) {
+    const cleaned = String(value).replace(/,/g, "").trim();
+    return Number(cleaned);
+}
+
+function formatCapitalInput(value) {
+    const digitsOnly = String(value).replace(/[^\d]/g, "");
+
+    if (!digitsOnly) {
+        return "";
+    }
+
+    return Number(digitsOnly).toLocaleString("en-GB");
+}
+
 function formatNumber(value) {
     return Number(value).toLocaleString("en-GB");
 }
@@ -361,13 +369,13 @@ function formatPercent(value) {
     return `${Number(value).toFixed(1)}%`;
 }
 
-function formatCompactNumber(value) {
+function formatCompactCurrency(value) {
     if (value >= 1000000) {
         return (value / 1000000).toFixed(1).replace(".0", "") + "m";
     }
 
     if (value >= 1000) {
-        return (value / 1000).toFixed(0) + "k";
+        return (value / 1000).toFixed(1).replace(".0", "") + "k";
     }
 
     return String(value);
@@ -376,12 +384,25 @@ function formatCompactNumber(value) {
 window.addEventListener("DOMContentLoaded", () => {
     const yearsInput = document.getElementById("years");
     const yearsValue = document.getElementById("yearsValue");
+    const capitalInput = document.getElementById("capital");
 
     if (yearsInput && yearsValue) {
         yearsValue.textContent = yearsInput.value;
 
         yearsInput.addEventListener("input", () => {
             yearsValue.textContent = yearsInput.value;
+        });
+    }
+
+    if (capitalInput) {
+        capitalInput.value = formatCapitalInput(capitalInput.value);
+
+        capitalInput.addEventListener("input", () => {
+            capitalInput.value = formatCapitalInput(capitalInput.value);
+        });
+
+        capitalInput.addEventListener("blur", () => {
+            capitalInput.value = formatCapitalInput(capitalInput.value);
         });
     }
 
