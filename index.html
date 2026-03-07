@@ -111,7 +111,29 @@
                     <h2>Projection</h2>
                     <p>10th, 50th and 90th percentile portfolio paths</p>
                 </div>
-                <canvas id="chart" width="1000" height="420"></canvas>
+
+                <div class="chart-legend" aria-label="Chart legend">
+                    <div class="legend-item">
+                        <span class="legend-line legend-line-90"></span>
+                        <span>90th percentile</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-line legend-line-50"></span>
+                        <span>Median</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-line legend-line-10"></span>
+                        <span>10th percentile</span>
+                    </div>
+                </div>
+
+                <div class="chart-wrap">
+                    <canvas id="chart" width="1000" height="420"></canvas>
+                </div>
+
+                <p class="chart-note">
+                    Shaded area shows the range between the 10th and 90th percentile outcomes.
+                </p>
             </section>
 
             <section class="card summary-card">
