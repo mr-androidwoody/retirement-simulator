@@ -622,22 +622,22 @@ function showSummary(
         </div>
 
         <div class="summary-item">
-            <span class="summary-label">Person 1 pension start</span>
+            <span class="summary-label">Person 1 state pension start</span>
             <span class="summary-value">${getPensionStartLabel(person1Age, statePensionAge)}</span>
         </div>
 
         <div class="summary-item">
-            <span class="summary-label">Person 1 projected pension at start</span>
+            <span class="summary-label">Person 1 projected state pension at start</span>
             <span class="summary-value">£${formatNumber(Math.round(p1ProjectedStart))}</span>
         </div>
 
         <div class="summary-item">
-            <span class="summary-label">Person 2 pension start</span>
+            <span class="summary-label">Person 2 state pension start</span>
             <span class="summary-value">${getPensionStartLabel(person2Age, statePensionAge)}</span>
         </div>
 
         <div class="summary-item">
-            <span class="summary-label">Person 2 projected pension at start</span>
+            <span class="summary-label">Person 2 projected state pension at start</span>
             <span class="summary-value">£${formatNumber(Math.round(p2ProjectedStart))}</span>
         </div>
 
