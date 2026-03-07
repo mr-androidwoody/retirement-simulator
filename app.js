@@ -42,10 +42,17 @@ function runSimulation() {
     };
 
     const simulationCount = 10000;
+
     const portfolioPaths = [];
-    const spendingPaths = [];
+    const totalSpendingPaths = [];
+    const portfolioWithdrawalPaths = [];
+    const statePensionIncomePaths = [];
+
     const endingValues = [];
-    const totalWithdrawals = [];
+    const totalPortfolioWithdrawals = [];
+    const totalHouseholdSpending = [];
+    const totalStatePensionIncome = [];
+
     let successCount = 0;
 
     for (let i = 0; i < simulationCount; i++) {
@@ -65,21 +72,41 @@ function runSimulation() {
         });
 
         portfolioPaths.push(chartMode === "real" ? result.realPortfolioPath : result.nominalPortfolioPath);
-        spendingPaths.push(chartMode === "real" ? result.realSpendingPath : result.nominalSpendingPath);
+        totalSpendingPaths.push(chartMode === "real" ? result.realSpendingPath : result.nominalSpendingPath);
+        portfolioWithdrawalPaths.push(chartMode === "real" ? result.realPortfolioWithdrawalPath : result.nominalPortfolioWithdrawalPath);
+        statePensionIncomePaths.push(chartMode === "real" ? result.realStatePensionIncomePath : result.nominalStatePensionIncomePath);
+
         endingValues.push(chartMode === "real" ? result.realEndingPortfolio : result.nominalEndingPortfolio);
-        totalWithdrawals.push(chartMode === "real" ? result.realTotalWithdrawn : result.nominalTotalWithdrawn);
+        totalPortfolioWithdrawals.push(chartMode === "real" ? result.realTotalPortfolioWithdrawals : result.nominalTotalPortfolioWithdrawals);
+        totalHouseholdSpending.push(chartMode === "real" ? result.realTotalHouseholdSpending : result.nominalTotalHouseholdSpending);
+        totalStatePensionIncome.push(chartMode === "real" ? result.realTotalStatePensionIncome : result.nominalTotalStatePensionIncome);
 
         if (result.succeeded) {
             successCount++;
         }
     }
 
-    const portfolioSummary = buildSummary(endingValues, totalWithdrawals, successCount, simulationCount);
+    const portfolioSummary = buildSummary(
+        endingValues,
+        totalPortfolioWithdrawals,
+        totalHouseholdSpending,
+        totalStatePensionIncome,
+        successCount,
+        simulationCount
+    );
+
     const portfolioChartData = buildPercentileChartData(portfolioPaths, years);
-    const spendingChartData = buildPercentileChartData(spendingPaths, years);
+    const totalSpendingChartData = buildPercentileChartData(totalSpendingPaths, years);
+    const withdrawalMedianData = buildMedianChartData(portfolioWithdrawalPaths, years);
+    const pensionMedianData = buildMedianChartData(statePensionIncomePaths, years);
 
     drawRangeChart("chart", portfolioChartData, "currency");
-    drawRangeChart("spendingChart", spendingChartData, "currency");
+    drawSpendingBreakdownChart(
+        "spendingChart",
+        totalSpendingChartData,
+        withdrawalMedianData,
+        pensionMedianData
+    );
 
     showSummary(
         portfolioSummary,
@@ -119,13 +146,24 @@ function runSingleSimulation(config) {
     let previousReturn = null;
     let succeeded = true;
 
-    let nominalPortfolioWithdrawalTotal = 0;
-    let realPortfolioWithdrawalTotal = 0;
+    let nominalTotalPortfolioWithdrawals = 0;
+    let realTotalPortfolioWithdrawals = 0;
+    let nominalTotalHouseholdSpending = 0;
+    let realTotalHouseholdSpending = 0;
+    let nominalTotalStatePensionIncome = 0;
+    let realTotalStatePensionIncome = 0;
 
     const nominalPortfolioPath = [];
     const realPortfolioPath = [];
+
     const nominalSpendingPath = [];
     const realSpendingPath = [];
+
+    const nominalPortfolioWithdrawalPath = [];
+    const realPortfolioWithdrawalPath = [];
+
+    const nominalStatePensionIncomePath = [];
+    const realStatePensionIncomePath = [];
 
     const initialPensionIncome = getNominalPensionIncomeForYear(
         0,
@@ -182,14 +220,26 @@ function runSingleSimulation(config) {
 
         const actualTotalSpending = requiredPortfolioWithdrawal + nominalPensionIncome;
 
-        nominalPortfolioWithdrawalTotal += requiredPortfolioWithdrawal;
-        realPortfolioWithdrawalTotal += requiredPortfolioWithdrawal / inflationIndex;
+        nominalTotalPortfolioWithdrawals += requiredPortfolioWithdrawal;
+        realTotalPortfolioWithdrawals += requiredPortfolioWithdrawal / inflationIndex;
+
+        nominalTotalStatePensionIncome += nominalPensionIncome;
+        realTotalStatePensionIncome += nominalPensionIncome / inflationIndex;
+
+        nominalTotalHouseholdSpending += actualTotalSpending;
+        realTotalHouseholdSpending += actualTotalSpending / inflationIndex;
 
         nominalPortfolioPath.push(Math.max(portfolio, 0));
         realPortfolioPath.push(Math.max(portfolio, 0) / inflationIndex);
 
         nominalSpendingPath.push(actualTotalSpending);
         realSpendingPath.push(actualTotalSpending / inflationIndex);
+
+        nominalPortfolioWithdrawalPath.push(requiredPortfolioWithdrawal);
+        realPortfolioWithdrawalPath.push(requiredPortfolioWithdrawal / inflationIndex);
+
+        nominalStatePensionIncomePath.push(nominalPensionIncome);
+        realStatePensionIncomePath.push(nominalPensionIncome / inflationIndex);
 
         previousReturn = annualReturn;
 
@@ -198,10 +248,11 @@ function runSingleSimulation(config) {
 
             for (let remaining = year + 1; remaining < years; remaining++) {
                 inflationIndex *= (1 + inflationRate);
+
                 nominalPortfolioPath.push(0);
                 realPortfolioPath.push(0);
 
-                const pensionOnlySpending = getNominalPensionIncomeForYear(
+                const pensionOnlyIncome = getNominalPensionIncomeForYear(
                     remaining,
                     inflationIndex,
                     person1Age,
@@ -210,8 +261,20 @@ function runSingleSimulation(config) {
                     statePensionAmount
                 );
 
-                nominalSpendingPath.push(pensionOnlySpending);
-                realSpendingPath.push(pensionOnlySpending / inflationIndex);
+                nominalSpendingPath.push(pensionOnlyIncome);
+                realSpendingPath.push(pensionOnlyIncome / inflationIndex);
+
+                nominalPortfolioWithdrawalPath.push(0);
+                realPortfolioWithdrawalPath.push(0);
+
+                nominalStatePensionIncomePath.push(pensionOnlyIncome);
+                realStatePensionIncomePath.push(pensionOnlyIncome / inflationIndex);
+
+                nominalTotalStatePensionIncome += pensionOnlyIncome;
+                realTotalStatePensionIncome += pensionOnlyIncome / inflationIndex;
+
+                nominalTotalHouseholdSpending += pensionOnlyIncome;
+                realTotalHouseholdSpending += pensionOnlyIncome / inflationIndex;
             }
 
             break;
@@ -223,10 +286,18 @@ function runSingleSimulation(config) {
         realPortfolioPath,
         nominalSpendingPath,
         realSpendingPath,
+        nominalPortfolioWithdrawalPath,
+        realPortfolioWithdrawalPath,
+        nominalStatePensionIncomePath,
+        realStatePensionIncomePath,
         nominalEndingPortfolio: nominalPortfolioPath[nominalPortfolioPath.length - 1] || 0,
         realEndingPortfolio: realPortfolioPath[realPortfolioPath.length - 1] || 0,
-        nominalTotalWithdrawn: nominalPortfolioWithdrawalTotal,
-        realTotalWithdrawn: realPortfolioWithdrawalTotal,
+        nominalTotalPortfolioWithdrawals,
+        realTotalPortfolioWithdrawals,
+        nominalTotalHouseholdSpending,
+        realTotalHouseholdSpending,
+        nominalTotalStatePensionIncome,
+        realTotalStatePensionIncome,
         succeeded
     };
 }
@@ -252,16 +323,27 @@ function getNominalPensionIncomeForYear(
     return total;
 }
 
-function buildSummary(endingValues, totalWithdrawals, successCount, simulationCount) {
+function buildSummary(
+    endingValues,
+    totalPortfolioWithdrawals,
+    totalHouseholdSpending,
+    totalStatePensionIncome,
+    successCount,
+    simulationCount
+) {
     const sortedEndings = [...endingValues].sort((a, b) => a - b);
-    const sortedWithdrawals = [...totalWithdrawals].sort((a, b) => a - b);
+    const sortedPortfolioWithdrawals = [...totalPortfolioWithdrawals].sort((a, b) => a - b);
+    const sortedHouseholdSpending = [...totalHouseholdSpending].sort((a, b) => a - b);
+    const sortedStatePensionIncome = [...totalStatePensionIncome].sort((a, b) => a - b);
 
     return {
         successRate: (successCount / simulationCount) * 100,
         medianEnding: percentileFromSorted(sortedEndings, 50),
         p10Ending: percentileFromSorted(sortedEndings, 10),
         p90Ending: percentileFromSorted(sortedEndings, 90),
-        medianWithdrawn: percentileFromSorted(sortedWithdrawals, 50),
+        medianPortfolioWithdrawals: percentileFromSorted(sortedPortfolioWithdrawals, 50),
+        medianHouseholdSpending: percentileFromSorted(sortedHouseholdSpending, 50),
+        medianStatePensionIncome: percentileFromSorted(sortedStatePensionIncome, 50),
         worstEnding: sortedEndings[0],
         bestEnding: sortedEndings[sortedEndings.length - 1]
     };
@@ -280,6 +362,17 @@ function buildPercentileChartData(allPaths, years) {
     }
 
     return { p10, p50, p90 };
+}
+
+function buildMedianChartData(allPaths, years) {
+    const p50 = [];
+
+    for (let year = 0; year < years; year++) {
+        const yearValues = allPaths.map(path => path[year]).sort((a, b) => a - b);
+        p50.push(percentileFromSorted(yearValues, 50));
+    }
+
+    return { p50 };
 }
 
 function percentileFromSorted(sortedArray, percentile) {
@@ -306,7 +399,7 @@ function drawRangeChart(canvasId, chartData, valueType) {
     const width = canvas.width;
     const height = canvas.height;
     const padding = {
-        top: 16,
+        top: 24,
         right: 18,
         bottom: 42,
         left: 64
@@ -315,13 +408,44 @@ function drawRangeChart(canvasId, chartData, valueType) {
     ctx.clearRect(0, 0, width, height);
 
     const allValues = [...chartData.p10, ...chartData.p50, ...chartData.p90];
-    const maxY = Math.max(...allValues, 1);
+    const maxY = Math.max(...allValues, 1) * 1.10;
 
     drawAxes(ctx, width, height, padding, maxY, chartData.p50.length, valueType);
     drawBand(ctx, chartData.p10, chartData.p90, width, height, padding, maxY);
     drawLine(ctx, chartData.p90, width, height, padding, maxY, "#9ca3af", 2);
     drawLine(ctx, chartData.p50, width, height, padding, maxY, "#2563eb", 3);
     drawLine(ctx, chartData.p10, width, height, padding, maxY, "#dc2626", 2);
+}
+
+function drawSpendingBreakdownChart(canvasId, totalChartData, withdrawalMedianData, pensionMedianData) {
+    const canvas = document.getElementById(canvasId);
+    const ctx = canvas.getContext("2d");
+
+    const width = canvas.width;
+    const height = canvas.height;
+    const padding = {
+        top: 24,
+        right: 18,
+        bottom: 42,
+        left: 64
+    };
+
+    ctx.clearRect(0, 0, width, height);
+
+    const allValues = [
+        ...totalChartData.p10,
+        ...totalChartData.p50,
+        ...totalChartData.p90,
+        ...withdrawalMedianData.p50,
+        ...pensionMedianData.p50
+    ];
+    const maxY = Math.max(...allValues, 1) * 1.12;
+
+    drawAxes(ctx, width, height, padding, maxY, totalChartData.p50.length, "currency");
+    drawBand(ctx, totalChartData.p10, totalChartData.p90, width, height, padding, maxY);
+    drawLine(ctx, totalChartData.p50, width, height, padding, maxY, "#2563eb", 3.2);
+    drawLine(ctx, withdrawalMedianData.p50, width, height, padding, maxY, "#dc2626", 2.4);
+    drawLine(ctx, pensionMedianData.p50, width, height, padding, maxY, "#16a34a", 3);
 }
 
 function drawAxes(ctx, width, height, padding, maxY, years, valueType) {
@@ -406,7 +530,7 @@ function drawBand(ctx, lowerData, upperData, width, height, padding, maxY) {
     }
 
     ctx.closePath();
-    ctx.fillStyle = "rgba(37, 99, 235, 0.08)";
+    ctx.fillStyle = "rgba(37, 99, 235, 0.10)";
     ctx.fill();
 }
 
@@ -512,6 +636,21 @@ function showSummary(
         </div>
 
         <div class="summary-item">
+            <span class="summary-label">Median total household spending</span>
+            <span class="summary-value">£${formatNumber(Math.round(summary.medianHouseholdSpending))}</span>
+        </div>
+
+        <div class="summary-item">
+            <span class="summary-label">Median total portfolio withdrawals</span>
+            <span class="summary-value">£${formatNumber(Math.round(summary.medianPortfolioWithdrawals))}</span>
+        </div>
+
+        <div class="summary-item">
+            <span class="summary-label">Median total state pension income</span>
+            <span class="summary-value">£${formatNumber(Math.round(summary.medianStatePensionIncome))}</span>
+        </div>
+
+        <div class="summary-item">
             <span class="summary-label">10th percentile ending</span>
             <span class="summary-value">£${formatNumber(Math.round(summary.p10Ending))}</span>
         </div>
@@ -519,11 +658,6 @@ function showSummary(
         <div class="summary-item">
             <span class="summary-label">90th percentile ending</span>
             <span class="summary-value">£${formatNumber(Math.round(summary.p90Ending))}</span>
-        </div>
-
-        <div class="summary-item">
-            <span class="summary-label">Median portfolio withdrawals</span>
-            <span class="summary-value">£${formatNumber(Math.round(summary.medianWithdrawn))}</span>
         </div>
 
         <div class="summary-item">
