@@ -11,7 +11,7 @@
         <header class="hero">
             <div>
                 <h1>Retirement Simulator</h1>
-                <p class="subhead">Monte Carlo testing with Guyton-Klinger guardrails</p>
+                <p class="subhead">Monte Carlo testing with Guyton-Klinger guardrails and state pension offsets</p>
             </div>
             <button class="run-btn" onclick="runSimulation()">Run Simulation</button>
         </header>
@@ -75,6 +75,22 @@
                     </div>
 
                     <div class="field">
+                        <label class="label-with-help" for="skipInflationAfterBadYear">
+                            <span>Skip Inflation After Bad Years</span>
+                            <span
+                                class="help"
+                                tabindex="0"
+                                title="If ticked, annual spending is not increased for inflation after a negative portfolio return year. This is a simplified Guyton-Klinger inflation rule."
+                                aria-label="If ticked, annual spending is not increased for inflation after a negative portfolio return year. This is a simplified Guyton Klinger inflation rule."
+                            >ⓘ</span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" id="skipInflationAfterBadYear" checked>
+                            <span>Enabled</span>
+                        </label>
+                    </div>
+
+                    <div class="field">
                         <label>Chart Mode</label>
                         <div class="toggle-row">
                             <label class="toggle-option">
@@ -88,14 +104,57 @@
                         </div>
                     </div>
 
+                    <div class="field-group">
+                        <div class="field-group-title">State Pension Assumptions</div>
+
+                        <div class="field two-up">
+                            <div>
+                                <label for="person1Age">Person 1 Age</label>
+                                <input type="number" id="person1Age" value="55" min="0" max="100">
+                            </div>
+                            <div>
+                                <label for="person2Age">Person 2 Age</label>
+                                <input type="number" id="person2Age" value="58" min="0" max="100">
+                            </div>
+                        </div>
+
+                        <div class="field two-up">
+                            <div>
+                                <label for="statePensionAge">State Pension Age</label>
+                                <input type="number" id="statePensionAge" value="67" min="50" max="80">
+                            </div>
+                            <div>
+                                <label for="statePensionAmount">Annual State Pension per Person (£)</label>
+                                <input
+                                    type="text"
+                                    id="statePensionAmount"
+                                    inputmode="numeric"
+                                    value="11,500"
+                                    autocomplete="off"
+                                >
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label for="statePensionSummary">State Pension Start Summary</label>
+                            <input
+                                type="text"
+                                id="statePensionSummary"
+                                value=""
+                                readonly
+                                class="readonly-field"
+                            >
+                        </div>
+                    </div>
+
                     <div class="field">
                         <label for="upperGuard" class="label-with-help">
                             <span>Upper Guardrail (%)</span>
                             <span
                                 class="help"
                                 tabindex="0"
-                                title="If your withdrawal rate rises this much above the starting rate, spending is reduced. Example: a 4% starting withdrawal with a 20% upper guardrail triggers a cut at 4.8%."
-                                aria-label="If your withdrawal rate rises this much above the starting rate, spending is reduced. Example: a 4 percent starting withdrawal with a 20 percent upper guardrail triggers a cut at 4.8 percent."
+                                title="If your portfolio withdrawal rate rises this much above the starting withdrawal rate, portfolio withdrawals are reduced."
+                                aria-label="If your portfolio withdrawal rate rises this much above the starting withdrawal rate, portfolio withdrawals are reduced."
                             >ⓘ</span>
                         </label>
                         <input type="number" id="upperGuard" value="20">
@@ -107,8 +166,8 @@
                             <span
                                 class="help"
                                 tabindex="0"
-                                title="If your withdrawal rate falls this much below the starting rate, spending increases. Example: a 4% starting withdrawal with a 20% lower guardrail triggers an increase at 3.2%."
-                                aria-label="If your withdrawal rate falls this much below the starting rate, spending increases. Example: a 4 percent starting withdrawal with a 20 percent lower guardrail triggers an increase at 3.2 percent."
+                                title="If your portfolio withdrawal rate falls this much below the starting withdrawal rate, portfolio withdrawals are increased."
+                                aria-label="If your portfolio withdrawal rate falls this much below the starting withdrawal rate, portfolio withdrawals are increased."
                             >ⓘ</span>
                         </label>
                         <input type="number" id="lowerGuard" value="20">
@@ -120,8 +179,8 @@
                             <span
                                 class="help"
                                 tabindex="0"
-                                title="The percentage spending cut applied when the upper guardrail is breached. Example: a 10% cut reduces £40,000 spending to £36,000."
-                                aria-label="The percentage spending cut applied when the upper guardrail is breached. Example: a 10 percent cut reduces 40 thousand pounds spending to 36 thousand pounds."
+                                title="The percentage cut to portfolio withdrawals when the upper guardrail is breached."
+                                aria-label="The percentage cut to portfolio withdrawals when the upper guardrail is breached."
                             >ⓘ</span>
                         </label>
                         <input type="number" id="downAdjust" value="10">
@@ -133,8 +192,8 @@
                             <span
                                 class="help"
                                 tabindex="0"
-                                title="The percentage spending increase applied when the lower guardrail is breached. Example: a 10% increase raises £40,000 spending to £44,000."
-                                aria-label="The percentage spending increase applied when the lower guardrail is breached. Example: a 10 percent increase raises 40 thousand pounds spending to 44 thousand pounds."
+                                title="The percentage increase to portfolio withdrawals when the lower guardrail is breached."
+                                aria-label="The percentage increase to portfolio withdrawals when the lower guardrail is breached."
                             >ⓘ</span>
                         </label>
                         <input type="number" id="upAdjust" value="10">
@@ -142,7 +201,7 @@
                 </div>
 
                 <div class="model-note">
-                    <strong>Inflation treatment:</strong> this version increases annual spending by the inflation assumption each year, then applies guardrail cuts or rises. It does not yet include the more advanced Guyton-Klinger rule that may skip inflation increases after bad market years.
+                    <strong>Model logic:</strong> total household spending starts from the initial withdrawal amount and normally rises with inflation. If the inflation-skip rule is enabled, inflation increases are skipped after negative return years. State pension starts at the chosen pension age for each person and reduces the amount drawn from the portfolio.
                 </div>
             </section>
 
@@ -152,7 +211,7 @@
                     <p>10th, 50th and 90th percentile portfolio paths</p>
                 </div>
 
-                <div class="chart-legend" aria-label="Chart legend">
+                <div class="chart-legend" aria-label="Portfolio chart legend">
                     <div class="legend-item">
                         <span class="legend-line legend-line-90"></span>
                         <span>90th percentile</span>
@@ -178,8 +237,8 @@
 
             <section class="card spending-card">
                 <div class="section-head">
-                    <h2>Annual Spending Path</h2>
-                    <p>How withdrawals evolve over time under the guardrail rules</p>
+                    <h2>Annual Household Spending Path</h2>
+                    <p>Total spending, including any state pension income once it starts</p>
                 </div>
 
                 <div class="chart-legend" aria-label="Spending chart legend">
