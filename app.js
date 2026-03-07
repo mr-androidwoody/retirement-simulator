@@ -23,7 +23,7 @@ function runSimulation() {
         up: Number(document.getElementById("upAdjust").value)
     };
 
-    const simulationCount = 5000;
+    const simulationCount = 10000;
     const allPaths = [];
     const endingValues = [];
     const totalWithdrawals = [];
