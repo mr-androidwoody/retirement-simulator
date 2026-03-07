@@ -166,26 +166,16 @@ function drawMonteCarloChart(chartData) {
     const maxY = Math.max(...allValues, 1);
 
     drawAxes(ctx, width, height, padding, maxY, chartData.p50.length);
-
-    drawLine(ctx, chartData.p90, width, height, padding, maxY, "#999", 2);
-    drawLine(ctx, chartData.p50, width, height, padding, maxY, "#1f77b4", 3);
-    drawLine(ctx, chartData.p10, width, height, padding, maxY, "#d62728", 2);
-
+    drawBand(ctx, chartData.p10, chartData.p90, width, height, padding, maxY);
+    drawLine(ctx, chartData.p90, width, height, padding, maxY, "#9ca3af", 2);
+    drawLine(ctx, chartData.p50, width, height, padding, maxY, "#2563eb", 3);
+    drawLine(ctx, chartData.p10, width, height, padding, maxY, "#dc2626", 2);
     drawLegend(ctx, width);
 }
 
 function drawAxes(ctx, width, height, padding, maxY, years) {
-    ctx.strokeStyle = "#333";
+    ctx.strokeStyle = "#d1d5db";
     ctx.lineWidth = 1;
-
-    ctx.beginPath();
-    ctx.moveTo(padding, padding);
-    ctx.lineTo(padding, height - padding);
-    ctx.lineTo(width - padding, height - padding);
-    ctx.stroke();
-
-    ctx.fillStyle = "#222";
-    ctx.font = "12px Arial";
 
     const yTicks = 5;
     for (let i = 0; i <= yTicks; i++) {
@@ -193,12 +183,23 @@ function drawAxes(ctx, width, height, padding, maxY, years) {
         const y = height - padding - (value / maxY) * (height - 2 * padding);
 
         ctx.beginPath();
-        ctx.moveTo(padding - 5, y);
-        ctx.lineTo(padding, y);
+        ctx.moveTo(padding, y);
+        ctx.lineTo(width - padding, y);
         ctx.stroke();
 
-        ctx.fillText("£" + formatCompactNumber(Math.round(value)), 8, y + 4);
+        ctx.fillStyle = "#6b7280";
+        ctx.font = "12px Arial";
+        ctx.fillText("£" + formatCompactNumber(Math.round(value)), 10, y + 4);
     }
+
+    ctx.strokeStyle = "#374151";
+    ctx.lineWidth = 1.2;
+
+    ctx.beginPath();
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, height - padding);
+    ctx.lineTo(width - padding, height - padding);
+    ctx.stroke();
 
     const xTicks = Math.min(years, 6);
     for (let i = 0; i <= xTicks; i++) {
@@ -207,12 +208,16 @@ function drawAxes(ctx, width, height, padding, maxY, years) {
 
         ctx.beginPath();
         ctx.moveTo(x, height - padding);
-        ctx.lineTo(x, height - padding + 5);
+        ctx.lineTo(x, height - padding + 6);
         ctx.stroke();
 
-        ctx.fillText(String(yearIndex + 1), x - 6, height - padding + 20);
+        ctx.fillStyle = "#6b7280";
+        ctx.font = "12px Arial";
+        ctx.fillText(String(yearIndex + 1), x - 6, height - padding + 22);
     }
 
+    ctx.fillStyle = "#4b5563";
+    ctx.font = "13px Arial";
     ctx.fillText("Year", width / 2 - 12, height - 15);
 
     ctx.save();
@@ -220,6 +225,31 @@ function drawAxes(ctx, width, height, padding, maxY, years) {
     ctx.rotate(-Math.PI / 2);
     ctx.fillText("Portfolio value", 0, 0);
     ctx.restore();
+}
+
+function drawBand(ctx, lowerData, upperData, width, height, padding, maxY) {
+    ctx.beginPath();
+
+    for (let i = 0; i < upperData.length; i++) {
+        const x = padding + (i / Math.max(upperData.length - 1, 1)) * (width - 2 * padding);
+        const y = height - padding - (upperData[i] / maxY) * (height - 2 * padding);
+
+        if (i === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    }
+
+    for (let i = lowerData.length - 1; i >= 0; i--) {
+        const x = padding + (i / Math.max(lowerData.length - 1, 1)) * (width - 2 * padding);
+        const y = height - padding - (lowerData[i] / maxY) * (height - 2 * padding);
+        ctx.lineTo(x, y);
+    }
+
+    ctx.closePath();
+    ctx.fillStyle = "rgba(37, 99, 235, 0.10)";
+    ctx.fill();
 }
 
 function drawLine(ctx, data, width, height, padding, maxY, colour, lineWidth) {
@@ -242,13 +272,13 @@ function drawLine(ctx, data, width, height, padding, maxY, colour, lineWidth) {
 }
 
 function drawLegend(ctx, width) {
-    const startX = width - 180;
-    const startY = 25;
-    const gap = 22;
+    const startX = width - 190;
+    const startY = 30;
+    const gap = 24;
 
-    drawLegendItem(ctx, startX, startY, "#999", "90th percentile");
-    drawLegendItem(ctx, startX, startY + gap, "#1f77b4", "Median");
-    drawLegendItem(ctx, startX, startY + gap * 2, "#d62728", "10th percentile");
+    drawLegendItem(ctx, startX, startY, "#9ca3af", "90th percentile");
+    drawLegendItem(ctx, startX, startY + gap, "#2563eb", "Median");
+    drawLegendItem(ctx, startX, startY + gap * 2, "#dc2626", "10th percentile");
 }
 
 function drawLegendItem(ctx, x, y, colour, label) {
@@ -256,41 +286,72 @@ function drawLegendItem(ctx, x, y, colour, label) {
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(x, y);
-    ctx.lineTo(x + 20, y);
+    ctx.lineTo(x + 22, y);
     ctx.stroke();
 
-    ctx.fillStyle = "#222";
+    ctx.fillStyle = "#374151";
     ctx.font = "12px Arial";
-    ctx.fillText(label, x + 28, y + 4);
+    ctx.fillText(label, x + 30, y + 4);
 }
 
 function showSummary(summary, startingCapital, years, initialWithdrawalRate, simulationCount) {
-    let summaryDiv = document.getElementById("summary");
-
-    if (!summaryDiv) {
-        summaryDiv = document.createElement("div");
-        summaryDiv.id = "summary";
-        summaryDiv.style.marginTop = "20px";
-        summaryDiv.style.padding = "16px";
-        summaryDiv.style.border = "1px solid #ddd";
-        summaryDiv.style.borderRadius = "8px";
-        summaryDiv.style.maxWidth = "720px";
-        document.body.appendChild(summaryDiv);
-    }
+    const summaryDiv = document.getElementById("summary");
 
     summaryDiv.innerHTML = `
-        <h3>Monte Carlo Summary</h3>
-        <p><strong>Simulations run:</strong> ${formatNumber(simulationCount)}</p>
-        <p><strong>Years modelled:</strong> ${formatNumber(years)}</p>
-        <p><strong>Starting portfolio:</strong> £${formatNumber(Math.round(startingCapital))}</p>
-        <p><strong>Initial withdrawal:</strong> ${formatPercent(initialWithdrawalRate * 100)}</p>
-        <p><strong>Success rate:</strong> ${formatPercent(summary.successRate)}</p>
-        <p><strong>Median ending portfolio:</strong> £${formatNumber(Math.round(summary.medianEnding))}</p>
-        <p><strong>10th percentile ending portfolio:</strong> £${formatNumber(Math.round(summary.p10Ending))}</p>
-        <p><strong>90th percentile ending portfolio:</strong> £${formatNumber(Math.round(summary.p90Ending))}</p>
-        <p><strong>Median total withdrawn:</strong> £${formatNumber(Math.round(summary.medianWithdrawn))}</p>
-        <p><strong>Worst ending portfolio:</strong> £${formatNumber(Math.round(summary.worstEnding))}</p>
-        <p><strong>Best ending portfolio:</strong> £${formatNumber(Math.round(summary.bestEnding))}</p>
+        <div class="summary-item">
+            <span class="summary-label">Simulations run</span>
+            <span class="summary-value">${formatNumber(simulationCount)}</span>
+        </div>
+
+        <div class="summary-item">
+            <span class="summary-label">Years modelled</span>
+            <span class="summary-value">${formatNumber(years)}</span>
+        </div>
+
+        <div class="summary-item">
+            <span class="summary-label">Starting portfolio</span>
+            <span class="summary-value">£${formatNumber(Math.round(startingCapital))}</span>
+        </div>
+
+        <div class="summary-item">
+            <span class="summary-label">Initial withdrawal</span>
+            <span class="summary-value">${formatPercent(initialWithdrawalRate * 100)}</span>
+        </div>
+
+        <div class="summary-item">
+            <span class="summary-label">Success rate</span>
+            <span class="summary-value">${formatPercent(summary.successRate)}</span>
+        </div>
+
+        <div class="summary-item">
+            <span class="summary-label">Median ending portfolio</span>
+            <span class="summary-value">£${formatNumber(Math.round(summary.medianEnding))}</span>
+        </div>
+
+        <div class="summary-item">
+            <span class="summary-label">10th percentile ending</span>
+            <span class="summary-value">£${formatNumber(Math.round(summary.p10Ending))}</span>
+        </div>
+
+        <div class="summary-item">
+            <span class="summary-label">90th percentile ending</span>
+            <span class="summary-value">£${formatNumber(Math.round(summary.p90Ending))}</span>
+        </div>
+
+        <div class="summary-item">
+            <span class="summary-label">Median total withdrawn</span>
+            <span class="summary-value">£${formatNumber(Math.round(summary.medianWithdrawn))}</span>
+        </div>
+
+        <div class="summary-item">
+            <span class="summary-label">Worst ending portfolio</span>
+            <span class="summary-value">£${formatNumber(Math.round(summary.worstEnding))}</span>
+        </div>
+
+        <div class="summary-item">
+            <span class="summary-label">Best ending portfolio</span>
+            <span class="summary-value">£${formatNumber(Math.round(summary.bestEnding))}</span>
+        </div>
     `;
 }
 
@@ -313,3 +374,17 @@ function formatCompactNumber(value) {
 
     return String(value);
 }
+
+window.addEventListener("DOMContentLoaded", () => {
+    const yearsInput = document.getElementById("years");
+    const yearsValue = document.getElementById("yearsValue");
+
+    if (yearsInput && yearsValue) {
+        yearsValue.textContent = yearsInput.value;
+        yearsInput.addEventListener("input", () => {
+            yearsValue.textContent = yearsInput.value;
+        });
+    }
+
+    runSimulation();
+});
