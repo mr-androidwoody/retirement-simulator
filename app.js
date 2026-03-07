@@ -361,6 +361,27 @@ function formatCapitalInput(value) {
     return Number(digitsOnly).toLocaleString("en-GB");
 }
 
+function updateInitialWithdrawalAmount() {
+    const capitalInput = document.getElementById("capital");
+    const withdrawalRateInput = document.getElementById("withdrawalRate");
+    const output = document.getElementById("initialWithdrawalAmount");
+
+    if (!capitalInput || !withdrawalRateInput || !output) {
+        return;
+    }
+
+    const capital = parseCurrencyInput(capitalInput.value);
+    const withdrawalRate = Number(withdrawalRateInput.value) / 100;
+
+    if (!Number.isFinite(capital) || capital <= 0 || !Number.isFinite(withdrawalRate) || withdrawalRate <= 0) {
+        output.value = "";
+        return;
+    }
+
+    const annualAmount = capital * withdrawalRate;
+    output.value = formatNumber(Math.round(annualAmount));
+}
+
 function formatNumber(value) {
     return Number(value).toLocaleString("en-GB");
 }
@@ -385,6 +406,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const yearsInput = document.getElementById("years");
     const yearsValue = document.getElementById("yearsValue");
     const capitalInput = document.getElementById("capital");
+    const withdrawalRateInput = document.getElementById("withdrawalRate");
 
     if (yearsInput && yearsValue) {
         yearsValue.textContent = yearsInput.value;
@@ -399,12 +421,21 @@ window.addEventListener("DOMContentLoaded", () => {
 
         capitalInput.addEventListener("input", () => {
             capitalInput.value = formatCapitalInput(capitalInput.value);
+            updateInitialWithdrawalAmount();
         });
 
         capitalInput.addEventListener("blur", () => {
             capitalInput.value = formatCapitalInput(capitalInput.value);
+            updateInitialWithdrawalAmount();
         });
     }
 
+    if (withdrawalRateInput) {
+        withdrawalRateInput.addEventListener("input", () => {
+            updateInitialWithdrawalAmount();
+        });
+    }
+
+    updateInitialWithdrawalAmount();
     runSimulation();
 });
